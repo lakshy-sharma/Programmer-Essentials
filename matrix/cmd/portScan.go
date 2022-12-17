@@ -31,9 +31,9 @@ var (
 	endPort   int
 )
 
-// scanCmd represents the scan command
-var scanCmd = &cobra.Command{
-	Use:   "scan",
+// portScanCmd represents the portScan command
+var portScanCmd = &cobra.Command{
+	Use:   "portScan",
 	Short: "Perform a TCP connect scan on a given network host.",
 	Long: `A TCP connect scan simply connects with a port on a remote server and checks if it open or not.
 	This scan has been implemented in parallel fashion to make it quick.
@@ -59,8 +59,8 @@ var scanCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(scanCmd)
-	scanCmd.Flags().StringVarP(&hostname, "hostname", "H", "localhost", "The host you want to scan.")
-	scanCmd.Flags().IntVarP(&startPort, "start_port", "s", 1, "Start number of the port you want to scan.")
-	scanCmd.Flags().IntVarP(&endPort, "end_port", "e", 1024, "The port number you want to stop scanning at.")
+	rootCmd.AddCommand(portScanCmd)
+	portScanCmd.Flags().StringVarP(&hostname, "hostname", "H", "localhost", "The host you want to scan.")
+	portScanCmd.Flags().IntVarP(&startPort, "start_port", "s", 1, "Start number of the port you want to scan.")
+	portScanCmd.Flags().IntVarP(&endPort, "end_port", "e", 1024, "The port number you want to stop scanning at.")
 }

@@ -29,11 +29,11 @@ var (
 	pingTimer   int
 )
 
-// discoverCmd represents the discover command
-var discoverCmd = &cobra.Command{
-	Use:   "discover",
+// hostScanCmd represents the hostScan command
+var hostScanCmd = &cobra.Command{
+	Use:   "hostScan",
 	Short: "A tool to discover online hosts in your network.",
-	Long: `The discover tool allows you to scan all hosts inside a network and check if they are online or not.
+	Long: `The hostScan allows you to scan all hosts inside a network and check if they are online or not.
 	It is capable of mapping IPs to their hostnames, making it easier to find a rogue raspberry pi ;)
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
@@ -53,7 +53,7 @@ var discoverCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(discoverCmd)
-	discoverCmd.Flags().IntVarP(&pingTimer, "pingtime", "t", 10, "Number of seconds to wait for a ping reply. Default is 10 seconds.")
-	discoverCmd.Flags().StringVarP(&networkCidr, "cidr", "c", "192.168.0.0/24", "The CIDR notation of the network you want to scan.")
+	rootCmd.AddCommand(hostScanCmd)
+	hostScanCmd.Flags().IntVarP(&pingTimer, "pingtime", "t", 10, "Number of seconds to wait for a ping reply. Default is 10 seconds.")
+	hostScanCmd.Flags().StringVarP(&networkCidr, "cidr", "c", "192.168.0.0/24", "The CIDR notation of the network you want to scan.")
 }
