@@ -9,8 +9,8 @@ It currently allows you to perform the following actions.
 2. Scan a network for hosts that are active. (This feature needs superuser access)
 
 ## Example
-1. Find open ports on a host: <i>matrix portScan [IP address to scan]</i>
-2. Find active hosts on a network: <i>matrix hostScan [Network CIDR to scan]</i>
+1. Find open ports on a host: <i>matrix portScan -H [IP address to scan] -s [Start port] -e [End port]</i>
+2. Find active hosts on a network: <i>matrix hostScan -c [Network CIDR to scan] -t [Time for Ping reply]</i>
 
 ## TODO
 1. Add feature of hosting a simple TCP server and a websocket server for testing.
