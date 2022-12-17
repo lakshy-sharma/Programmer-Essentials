@@ -8,8 +8,13 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
+	"text/tabwriter"
+	"time"
 
+	"github.com/schollz/progressbar"
 	"github.com/spf13/cobra"
+	"github.com/tatsushid/go-fastping"
 )
 
 // discoverCmd represents the discover command
@@ -20,7 +25,18 @@ var discoverCmd = &cobra.Command{
 	It is capable of mapping IPs to their hostnames, making it easier to find a rogue raspberry pi ;)
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
-		discoverHosts()
+		scanResults := discoverHosts()
+		writer := tabwriter.NewWriter(os.Stdout, 1, 8, 0, ' ', tabwriter.AlignRight|tabwriter.Debug)
+		fmt.Fprintln(writer, "\nScan Complete")
+		fmt.Fprintln(writer, "--------------------------------------------")
+		fmt.Fprintln(writer, "IP Address\tState\tHostname\tResponse Time")
+		fmt.Fprintln(writer, "--------------------------------------------")
+		for _, result := range scanResults {
+			if result.state == "Up" {
+				fmt.Fprintf(writer, "%s\t%s\t%s\t%s\n", result.ipaddress, result.state, result.hostname, result.responseTime)
+			}
+		}
+		writer.Flush()
 	},
 }
 
@@ -34,11 +50,22 @@ var (
 )
 
 type ipData struct {
-	ipaddress string
-	State     string
-	hostname  []string
+	ipaddress    string
+	state        string
+	hostname     []string
+	responseTime time.Duration
 }
 
+type pingResult struct {
+	ipAddress    *net.IPAddr
+	ipState      string
+	responseTime time.Duration
+}
+
+const PING_TIMER = 10
+
+// This function captures the IP addresses which must be scanned based on shown network CIDR.
+// It returns a slice of valid net.IP instances.
 func convertToIPs() []net.IP {
 	// convert string to IPNet struct
 	_, ipv4Net, err := net.ParseCIDR(networkCidr)
@@ -64,24 +91,101 @@ func convertToIPs() []net.IP {
 	return ipStore
 }
 
-func captureIpDetails(ip net.IP) ipData {
-	var ipDetails ipData
-	// Set the Ip address
-	ipDetails.ipaddress = ip.String()
-
-	// Lookup the name of a IP
-	lookup, err := net.LookupAddr(ip.String())
-	if err == nil {
-		ipDetails.hostname = lookup
-	}
-	return ipDetails
-}
-
-func discoverHosts() {
-	ipsToScan := convertToIPs()
+// This function setups the ping control mechanism
+func pingController(ipsToScan []net.IP, pingResultChannel chan pingResult, finishChannel chan string) {
+	// Setup the IP pinger.
+	p := fastping.NewPinger()
+	p.MaxRTT = time.Second*PING_TIMER + 1
+	var pingOutput pingResult
 
 	for _, ip := range ipsToScan {
-		ipDetails := captureIpDetails(ip)
-		fmt.Printf("%s\t%s\t%s\n", ipDetails.ipaddress, ipDetails.State, ipDetails.hostname)
+		// Resolve the ip addresses and add them to a IP address pinger.
+		resolvedAddress, err := net.ResolveIPAddr("ip4:icmp", ip.String())
+		if err != nil {
+			os.Exit(1)
+		}
+		p.AddIPAddr(resolvedAddress)
+	}
+
+	p.OnRecv = func(addr *net.IPAddr, rtt time.Duration) {
+		pingOutput.ipAddress = addr
+		pingOutput.ipState = "Up"
+		pingOutput.responseTime = rtt
+		pingResultChannel <- pingOutput
+	}
+
+	// Once the final time passes stop the program.
+	p.OnIdle = func() {
+		finishChannel <- "Completed"
+	}
+	err := p.Run()
+	if err != nil {
+		panic(err)
+	}
+}
+
+// This function is responsible for sending the ping packets to the IP hosts and collecting other details for each IP.
+func formatResults(pingResultChannel chan pingResult, ipDataResults chan ipData, ipsToScan []net.IP, finishChannel chan string) {
+
+	// Wait for each ping result and perform a IP lookup.
+	for {
+		select {
+		case finishMessage := <-finishChannel:
+			if finishMessage == "Completed" {
+				finishChannel <- "Finish"
+			}
+
+		case pingOutput := <-pingResultChannel:
+			var ipDetails ipData
+
+			// Capture the IP data.
+
+			ipDetails.ipaddress = pingOutput.ipAddress.String()
+			ipDetails.state = pingOutput.ipState
+			ipDetails.responseTime = pingOutput.responseTime
+
+			// Perform a Name Lookup.
+			lookup, err := net.LookupAddr(pingOutput.ipAddress.String())
+			if err == nil {
+				ipDetails.hostname = lookup
+			} else {
+				ipDetails.hostname = []string{"N/A"}
+			}
+			ipDataResults <- ipDetails
+		}
+	}
+}
+
+// This function is the main driver function responsible for controlling the flow of discovery.
+func discoverHosts() []ipData {
+	ipsToScan := convertToIPs()
+	pingResultChannel := make(chan pingResult)
+	ipDataResults := make(chan ipData)
+	finishChannel := make(chan string)
+
+	var scanResults []ipData
+	go pingController(ipsToScan, pingResultChannel, finishChannel)
+	go formatResults(pingResultChannel, ipDataResults, ipsToScan, finishChannel)
+
+	fmt.Printf("This scan will run for %d Seconds to find LAN peers.\n", PING_TIMER)
+	// Show a simple Progress Bar.
+	go func() {
+		bar := progressbar.New(PING_TIMER)
+		for i := 1; i <= PING_TIMER; i++ {
+			bar.Add(1)
+			time.Sleep(1 * time.Second)
+		}
+		fmt.Print("\n")
+	}()
+
+	for {
+		select {
+		case ipResults := <-ipDataResults:
+			scanResults = append(scanResults, ipResults)
+		case finishMessage := <-finishChannel:
+			if finishMessage == "Finish" {
+				return scanResults
+			}
+		}
 	}
 }
