@@ -1,6 +1,7 @@
 # Matrix
 
-The matrix is a collection of networking tools.
+The matrix is a collection of networking tools written in Go using cobra CLi framework.
+The focus is on increasing the performance of available utilities and create more to support developers.
 It currently allows you to perform the following actions.
 
 ## Features
