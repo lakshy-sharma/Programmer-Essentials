@@ -20,10 +20,16 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"net/http"
 	"strconv"
 	"sync"
+
+	"github.com/gorilla/websocket"
 )
 
+/*
+TCP server functions.
+*/
 func processTCPClient(clientConnection net.Conn, replyMessage string, wg *sync.WaitGroup) {
 	defer wg.Done()
 	fmt.Println("Received a new client connection.")
@@ -69,4 +75,58 @@ func ServeTCP(portNumber int, replyMessage string) {
 		wg.Add(1)
 		go processTCPClient(clientConnection, replyMessage, wg)
 	}
+}
+
+/*
+Websocket server functions.
+*/
+
+var upgrader = websocket.Upgrader{}
+var replyMessage string
+
+func socketHandler(w http.ResponseWriter, r *http.Request) {
+	websocketConnection, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Println("Error during upgrading connection: ", err)
+		return
+	}
+	defer websocketConnection.Close()
+
+	for {
+		messageType, message, err := websocketConnection.ReadMessage()
+		if err != nil {
+			if fmt.Sprintf("%s", err) == "websocket: close 1006 (abnormal closure): unexpected EOF" {
+				log.Println("Client Exited.")
+				break
+			}
+			log.Println("Error during reading client message: ", err)
+			break
+		}
+		fmt.Printf("<- %s", message)
+
+		// Writing message back to the client.
+		if replyMessage == "ECHO" {
+			reply := "Echo: " + string(message)
+			err = websocketConnection.WriteMessage(messageType, []byte(reply))
+			if err != nil {
+				log.Println("Error during writing message to socket: ", err)
+				break
+			}
+		} else {
+			reply := replyMessage
+			err = websocketConnection.WriteMessage(messageType, []byte(reply))
+			if err != nil {
+				log.Println("Error during writing message to socket: ", err)
+				break
+			}
+		}
+
+	}
+}
+
+// This function starts a Websocket server.
+func ServeWebsocket(portNumber int, replyString string) {
+	replyMessage = replyString
+	http.HandleFunc("/", socketHandler)
+	log.Fatal(http.ListenAndServe("localhost:"+strconv.Itoa(portNumber), nil))
 }

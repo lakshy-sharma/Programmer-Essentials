@@ -18,9 +18,12 @@ package utils
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"net"
 	"os"
 	"strconv"
+
+	"github.com/gorilla/websocket"
 )
 
 // This function starts a TCP client which connects with the server and allows users to connect test server responses.
@@ -42,5 +45,35 @@ func TcpClient(serverPort int, serverHost string) {
 		// Capturing the output from the server and displaying it.
 		message, _ := bufio.NewReader(serverConnection).ReadString('\n')
 		fmt.Print("-> " + message)
+	}
+}
+
+// This function starts a websocket client.
+func WebsocketClient(serverPort int, serverHost string, socketPath string) {
+	socketUrl := "ws://" + serverHost + ":" + strconv.Itoa(serverPort) + socketPath
+	websocketConnection, _, err := websocket.DefaultDialer.Dial(socketUrl, nil)
+	if err != nil {
+		log.Fatal("Error in connecting with the server: ", err)
+	}
+	defer websocketConnection.Close()
+
+	for {
+		// Reading the input from the user to send back to the server.
+		reader := bufio.NewReader(os.Stdin)
+		fmt.Print(">> ")
+		text, _ := reader.ReadString('\n')
+		websocketConnection.WriteMessage(websocket.TextMessage, []byte(text))
+
+		// Receiving reply from the server.
+		_, msg, err := websocketConnection.ReadMessage()
+		if err != nil {
+			if fmt.Sprintf("%s", err) == "websocket: close 1006 (abnormal closure): unexpected EOF" {
+				log.Println("Server Closed Connection.")
+				return
+			}
+			log.Println("Error in receiving the message: ", err)
+			return
+		}
+		fmt.Println("<- ", string(msg))
 	}
 }

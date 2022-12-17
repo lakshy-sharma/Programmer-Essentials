@@ -22,8 +22,9 @@ import (
 )
 
 var (
-	portNumber   int
-	replyMessage string
+	portNumber    int
+	replyMessage  string
+	websocketMode bool
 )
 
 // launchServerCmd represents the serve command
@@ -33,7 +34,11 @@ var launchServerCmd = &cobra.Command{
 	Long: `This command starts a testing server which replies back with Echo of what it receives.
 	In case you want to send a specific reply, you can tell the server to send back that reply for each client message.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		utils.ServeTCP(portNumber, replyMessage)
+		if !websocketMode {
+			utils.ServeTCP(portNumber, replyMessage)
+		} else if websocketMode {
+			utils.ServeWebsocket(portNumber, replyMessage)
+		}
 	},
 }
 
@@ -41,4 +46,5 @@ func init() {
 	rootCmd.AddCommand(launchServerCmd)
 	launchServerCmd.Flags().IntVarP(&portNumber, "port", "p", 5000, "The port on which to host the server.")
 	launchServerCmd.Flags().StringVarP(&replyMessage, "reply", "r", "ECHO", "The reply to send when the server accepts a client message.\nECHO server is default and sends back what client sent.")
+	launchServerCmd.Flags().BoolVarP(&websocketMode, "wsmode", "w", false, "Start the server in web socket mode.")
 }
