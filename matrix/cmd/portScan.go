@@ -34,8 +34,9 @@ var (
 // portScanCmd represents the portScan command
 var portScanCmd = &cobra.Command{
 	Use:   "portScan",
-	Short: "Perform a TCP connect scan on a given network host.",
-	Long: `A TCP connect scan simply connects with a port on a remote server and checks if it open or not.
+	Short: "Discover open ports on a given network host.",
+	Long: `The scan port command performs a TCP connect scan to all the ports on the given host. 
+	Such scans simply tries to connect with the given ports on the machine and checks if they are open or not.
 	This scan has been implemented in parallel fashion to make it quick.
 	`,
 	Run: func(cmd *cobra.Command, args []string) {

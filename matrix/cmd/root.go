@@ -25,13 +25,18 @@ import (
 var rootCmd = &cobra.Command{
 	Use:   "matrix",
 	Short: "Matrix is a network oriented tool which provides you several network related functionalities.",
-	Long: `The Matrix application provides you several network related functionalities for debugging and troubleshooting.
+	Long: `
+	WELCOME TO THE MATRIX.
+	The Matrix application provides developers with several network related functionalities.
+	It aims to serve as the swiss army knife of network application testing and debugging.
 
-	A few have been listed below 
+	Features: Currently available.
 	1. Scan a target host for any open ports.
 	2. Scan a network for available hosts.
-	3. Create a TCP server for testing TCP based applications.
-	4. Create a gRPC based server for testing gRPC based applications.
+
+	Upcoming Features: 
+	1. A Simple TCP/WEbsocket or gRPC server for testing your peer to peer clients.
+	2. A high speed packet generator for testing networks.
 	`,
 }
 

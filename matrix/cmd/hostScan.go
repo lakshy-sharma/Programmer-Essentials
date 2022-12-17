@@ -32,7 +32,7 @@ var (
 // hostScanCmd represents the hostScan command
 var hostScanCmd = &cobra.Command{
 	Use:   "hostScan",
-	Short: "A tool to discover online hosts in your network.",
+	Short: "Discover active hosts in your network.",
 	Long: `The hostScan allows you to scan all hosts inside a network and check if they are online or not.
 	It is capable of mapping IPs to their hostnames, making it easier to find a rogue raspberry pi ;)
 	`,
