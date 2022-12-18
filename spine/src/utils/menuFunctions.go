@@ -16,9 +16,11 @@ package utils
 
 import (
 	"io/ioutil"
+	"log"
 	"spine/src/global"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -34,6 +36,34 @@ func OpenFile(inputBox *widget.Entry, file fyne.URIReadCloser) error {
 		}
 		// Set text content in the input box.
 		inputBox.SetText(string(content))
+	}
+	return nil
+}
+
+func SaveFile(inputBox *widget.Entry, window fyne.Window) error {
+	text := inputBox.Text
+
+	// If the file exists then save text in the file.
+	if len(global.CurrentPath) > 0 {
+		err := ioutil.WriteFile(global.CurrentPath, []byte(text), 0644)
+		if err != nil {
+			log.Fatal(err)
+			return err
+		}
+	} else {
+		dialog.ShowFileSave(func(file fyne.URIWriteCloser, err error) {
+			if err != nil {
+				dialog.ShowError(err, window)
+			}
+			if file != nil {
+				err := ioutil.WriteFile(file.URI().Path(), []byte(text), 0644)
+				if err != nil {
+					log.Fatal(err)
+					return
+				}
+				global.CurrentPath = file.URI().Path()
+			}
+		}, window)
 	}
 	return nil
 }

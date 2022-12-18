@@ -33,8 +33,8 @@ func StartMaster() {
 
 	inputBox := widget.NewMultiLineEntry()
 	inputBox.SetPlaceHolder("Simple, Lightweight, Fast...")
-	inputBox.OnChanged = func(s string) {
 
+	inputBox.OnChanged = func(text string) {
 	}
 
 	openFile := fyne.NewMenuItem("Open File", func() {
@@ -47,9 +47,13 @@ func StartMaster() {
 		}, masterWindow).Show()
 	})
 
+	saveFile := fyne.NewMenuItem("Save File", func() {
+		utils.SaveFile(inputBox, masterWindow)
+	})
+
 	// Adding the Menu Items to the Master Window.
 	masterWindow.SetMainMenu(fyne.NewMainMenu(
-		fyne.NewMenu("File", openFile),
+		fyne.NewMenu("File", openFile, saveFile),
 	))
 	// Setting the content and rendering to the screen.
 	masterWindow.SetContent(inputBox)
